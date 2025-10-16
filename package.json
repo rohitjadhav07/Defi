@@ -1,0 +1,26 @@
+{
+  "name": "defi-portfolio-agent",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "agent",
+    "bot",
+    "mcp-server"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=frontend",
+    "dev:agent": "npm run dev --workspace=agent",
+    "dev:bot": "npm run dev --workspace=bot",
+    "dev:mcp": "npm run dev --workspace=mcp-server",
+    "build": "npm run build --workspaces",
+    "install:all": "npm install && npm install --workspaces"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "hardhat": "^2.26.3"
+  }
+}
