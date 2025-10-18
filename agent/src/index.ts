@@ -485,7 +485,7 @@ app.get('/agent/status', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 DeFi Guardian AI running on port ${PORT}`);
+  console.log(`⚡ Nexus Finance API running on port ${PORT}`);
   console.log(`✅ ADK-TS Agent Framework initialized`);
   console.log(`✅ Risk Analysis enabled`);
   console.log(`✅ Educational system ready`);
