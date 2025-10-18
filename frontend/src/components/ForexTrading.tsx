@@ -7,6 +7,8 @@ import { useState } from 'react';
 export default function ForexTrading() {
   const [selectedPair, setSelectedPair] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedSignal, setSelectedSignal] = useState<any>(null);
+  const [showSignalModal, setShowSignalModal] = useState(false);
 
   const { data: pairs = [], isLoading: pairsLoading, isFetching } = useQuery({
     queryKey: ['forex-pairs'],
@@ -130,7 +132,13 @@ export default function ForexTrading() {
                     <p className="font-semibold text-green-400">{signal.takeProfit.toFixed(4)}</p>
                   </div>
                 </div>
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors">
+                <button 
+                  onClick={() => {
+                    setSelectedSignal(signal);
+                    setShowSignalModal(true);
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
+                >
                   Execute Signal
                 </button>
               </div>
@@ -179,6 +187,138 @@ export default function ForexTrading() {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Selected Pair Chart */}
+      {selectedPair && (
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <h2 className="text-xl font-semibold mb-4">{selectedPair} Price Chart</h2>
+          <div className="bg-gray-900 rounded-lg p-4 h-64 flex items-center justify-center relative overflow-hidden">
+            {/* Simple ASCII-style chart */}
+            <div className="w-full h-full flex items-end gap-1">
+              {Array.from({ length: 50 }).map((_, i) => {
+                const height = 30 + Math.sin(i / 5) * 20 + Math.random() * 10;
+                const isUp = i > 0 && height > (30 + Math.sin((i-1) / 5) * 20);
+                return (
+                  <div
+                    key={i}
+                    className={`flex-1 rounded-t transition-all ${
+                      isUp ? 'bg-green-500/50' : 'bg-red-500/50'
+                    }`}
+                    style={{ height: `${height}%` }}
+                  />
+                );
+              })}
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="text-gray-600 text-sm">Live Price Movement</p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-4 gap-4 text-sm">
+            <div className="bg-gray-900 rounded p-3">
+              <p className="text-gray-400 text-xs">24h High</p>
+              <p className="font-semibold text-green-400">
+                {pairs.find((p: any) => p.symbol === selectedPair)?.high24h.toFixed(4) || '-'}
+              </p>
+            </div>
+            <div className="bg-gray-900 rounded p-3">
+              <p className="text-gray-400 text-xs">24h Low</p>
+              <p className="font-semibold text-red-400">
+                {pairs.find((p: any) => p.symbol === selectedPair)?.low24h.toFixed(4) || '-'}
+              </p>
+            </div>
+            <div className="bg-gray-900 rounded p-3">
+              <p className="text-gray-400 text-xs">24h Change</p>
+              <p className={`font-semibold ${
+                (pairs.find((p: any) => p.symbol === selectedPair)?.change24h || 0) >= 0 
+                  ? 'text-green-400' 
+                  : 'text-red-400'
+              }`}>
+                {(pairs.find((p: any) => p.symbol === selectedPair)?.change24h || 0).toFixed(2)}%
+              </p>
+            </div>
+            <div className="bg-gray-900 rounded p-3">
+              <p className="text-gray-400 text-xs">Spread</p>
+              <p className="font-semibold">
+                {(pairs.find((p: any) => p.symbol === selectedPair)?.spread || 0).toFixed(4)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Signal Execution Modal */}
+      {showSignalModal && selectedSignal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">
+            <h3 className="text-xl font-semibold mb-4">Execute Trading Signal</h3>
+            
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Pair:</span>
+                <span className="font-semibold">{selectedSignal.pair}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Type:</span>
+                <span className={`font-semibold ${
+                  selectedSignal.type === 'buy' ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {selectedSignal.type.toUpperCase()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Entry Price:</span>
+                <span className="font-semibold">{selectedSignal.entryPrice.toFixed(4)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Stop Loss:</span>
+                <span className="font-semibold text-red-400">{selectedSignal.stopLoss.toFixed(4)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Take Profit:</span>
+                <span className="font-semibold text-green-400">{selectedSignal.takeProfit.toFixed(4)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Confidence:</span>
+                <span className="font-semibold">{selectedSignal.confidence}%</span>
+              </div>
+            </div>
+
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-400">
+                💡 {selectedSignal.reason}
+              </p>
+            </div>
+
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+              <p className="text-xs text-yellow-400">
+                ⚠️ Note: This is a demo signal. Real trading requires smart contract deployment and collateral.
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowSignalModal(false);
+                  setSelectedSignal(null);
+                }}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  alert(`Signal executed for ${selectedSignal.pair}!\n\nNote: Smart contract deployment required for actual execution.`);
+                  setShowSignalModal(false);
+                  setSelectedSignal(null);
+                }}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
+              >
+                Execute Trade
+              </button>
+            </div>
           </div>
         </div>
       )}
