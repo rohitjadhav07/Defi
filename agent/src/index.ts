@@ -245,6 +245,93 @@ app.get('/achievements', async (req, res) => {
   }
 });
 
+// Complete lesson and earn certificate
+app.post('/education/complete', async (req, res) => {
+  try {
+    const { lessonId, address, quizScore } = req.body;
+    
+    // Mark lesson as complete
+    const lesson = educationService.getLesson(lessonId);
+    if (!lesson) {
+      return res.status(404).json({ error: 'Lesson not found' });
+    }
+
+    // Check if user earned a certificate (quiz score >= 70%)
+    let certificateEarned = null;
+    if (quizScore && quizScore >= 70) {
+      certificateEarned = {
+        id: `cert-${Date.now()}`,
+        name: `${lesson.title} Certificate`,
+        level: lesson.difficulty,
+        earnedAt: new Date().toISOString(),
+        score: quizScore,
+        nftTokenId: null // Will be minted separately
+      };
+    }
+
+    res.json({
+      success: true,
+      lessonCompleted: true,
+      certificateEarned
+    });
+  } catch (error) {
+    console.error('Error completing lesson:', error);
+    res.status(500).json({ error: 'Failed to complete lesson' });
+  }
+});
+
+// Get user certificates
+app.get('/education/certificates/:address', async (req, res) => {
+  try {
+    const { address } = req.params;
+    
+    // In production: Query blockchain for user's NFT certificates
+    // For now: Return mock certificates
+    const certificates = [
+      {
+        id: 'cert_1',
+        name: 'DeFi Basics Certificate',
+        level: 'Beginner',
+        earnedAt: new Date().toISOString(),
+        score: 85,
+        nftTokenId: null
+      }
+    ];
+    
+    res.json(certificates);
+  } catch (error) {
+    console.error('Error fetching certificates:', error);
+    res.status(500).json({ error: 'Failed to fetch certificates' });
+  }
+});
+
+// Mint NFT certificate
+app.post('/education/mint-nft', async (req, res) => {
+  try {
+    const { certificateId, address } = req.body;
+    
+    // In production: Mint real NFT using ethers.js
+    // 1. Connect to contract
+    // 2. Upload metadata to IPFS
+    // 3. Call mintCertificate()
+    // 4. Return transaction hash and token ID
+    
+    // For demo: Return mock data
+    const tokenId = Math.floor(Math.random() * 10000);
+    const txHash = '0x' + Math.random().toString(16).substring(2, 66);
+    
+    res.json({
+      success: true,
+      tokenId,
+      transactionHash: txHash,
+      message: 'NFT Certificate minted successfully!'
+    });
+  } catch (error) {
+    console.error('Error minting NFT:', error);
+    res.status(500).json({ error: 'Failed to mint NFT' });
+  }
+});
+
 // Scan for arbitrage opportunities
 app.get('/arbitrage', async (req, res) => {
   try {

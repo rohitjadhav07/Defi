@@ -152,15 +152,43 @@ export class RiskService {
     provider: ethers.JsonRpcProvider
   ): Promise<number> {
     try {
-      // Get contract creation transaction (simplified)
       const code = await provider.getCode(address);
       if (code === '0x') return 0; // Not a contract
 
-      // For demo: return random age between 1-365 days
-      // In production: query block explorer API for creation date
-      return Math.floor(Math.random() * 365) + 1;
-    } catch {
-      return 0;
+      // Get network info
+      const network = await provider.getNetwork();
+      const chainId = Number(network.chainId);
+      
+      // Get API key and base URL
+      const apiKey = this.etherscanApiKeys[chainId] || 'YourApiKeyToken';
+      let baseUrl = 'https://api.etherscan.io/api';
+      
+      if (chainId === 84532) baseUrl = 'https://api-sepolia.basescan.org/api';
+      else if (chainId === 8453) baseUrl = 'https://api.basescan.org/api';
+      else if (chainId === 421614) baseUrl = 'https://api-sepolia.arbiscan.io/api';
+      
+      // Get contract creation info
+      const response = await fetch(
+        `${baseUrl}?module=contract&action=getcontractcreation&contractaddresses=${address}&apikey=${apiKey}`
+      );
+      
+      const data: any = await response.json();
+      if (data.status === '1' && data.result && data.result[0]) {
+        const creationBlock = parseInt(data.result[0].blockNumber);
+        const currentBlock = await provider.getBlockNumber();
+        const blockDiff = currentBlock - creationBlock;
+        
+        // Estimate days (assuming ~12 sec per block for Ethereum, ~2 sec for Base)
+        const secondsPerBlock = chainId === 8453 || chainId === 84532 ? 2 : 12;
+        const days = Math.floor((blockDiff * secondsPerBlock) / 86400);
+        return Math.max(days, 1); // At least 1 day
+      }
+      
+      // Fallback: estimate from current block
+      return 30;
+    } catch (error) {
+      console.error('Error checking contract age:', error);
+      return 30;
     }
   }
 
@@ -169,10 +197,26 @@ export class RiskService {
     chainId: number
   ): Promise<boolean> {
     try {
-      // For demo: 70% chance verified
-      // In production: query Etherscan/Basescan API
-      return Math.random() > 0.3;
-    } catch {
+      const apiKey = this.etherscanApiKeys[chainId] || 'YourApiKeyToken';
+      let baseUrl = 'https://api.etherscan.io/api';
+      
+      if (chainId === 84532) baseUrl = 'https://api-sepolia.basescan.org/api';
+      else if (chainId === 8453) baseUrl = 'https://api.basescan.org/api';
+      else if (chainId === 421614) baseUrl = 'https://api-sepolia.arbiscan.io/api';
+      
+      const response = await fetch(
+        `${baseUrl}?module=contract&action=getsourcecode&address=${address}&apikey=${apiKey}`
+      );
+      
+      const data: any = await response.json();
+      if (data.status === '1' && data.result && data.result[0]) {
+        // Contract is verified if source code exists
+        return data.result[0].SourceCode !== '';
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking contract verification:', error);
       return false;
     }
   }
@@ -182,11 +226,23 @@ export class RiskService {
     chainId: number
   ): Promise<number> {
     try {
-      // For demo: return score 0-100
-      // In production: analyze top holder percentages
-      // Score = 100 if well distributed, 0 if concentrated
-      return Math.floor(Math.random() * 100);
-    } catch {
+      // Use CoinGecko API to get token info (includes holder data for some tokens)
+      const response = await fetch(
+        `https://api.coingecko.com/api/v3/coins/ethereum/contract/${address.toLowerCase()}`
+      );
+      
+      if (response.ok) {
+        const data: any = await response.json();
+        // If we have market data, token is likely well-distributed
+        if (data.market_data && data.market_data.market_cap) {
+          return 75; // Good distribution if listed on CoinGecko
+        }
+      }
+      
+      // Fallback: assume moderate distribution
+      return 50;
+    } catch (error) {
+      console.error('Error checking holder distribution:', error);
       return 50;
     }
   }
@@ -197,10 +253,29 @@ export class RiskService {
     provider: ethers.JsonRpcProvider
   ): Promise<number> {
     try {
-      // For demo: return score 0-100
-      // In production: check DEX liquidity pools
-      return Math.floor(Math.random() * 100);
-    } catch {
+      // Check if token has liquidity on CoinGecko
+      const response = await fetch(
+        `https://api.coingecko.com/api/v3/coins/ethereum/contract/${address.toLowerCase()}`
+      );
+      
+      if (response.ok) {
+        const data: any = await response.json();
+        if (data.market_data && data.market_data.total_volume) {
+          const volume24h = data.market_data.total_volume.usd || 0;
+          
+          // Score based on 24h volume
+          if (volume24h > 1000000) return 100; // >$1M = excellent
+          if (volume24h > 100000) return 80;   // >$100K = good
+          if (volume24h > 10000) return 60;    // >$10K = moderate
+          if (volume24h > 1000) return 40;     // >$1K = low
+          return 20; // <$1K = very low
+        }
+      }
+      
+      // Fallback: assume moderate liquidity
+      return 50;
+    } catch (error) {
+      console.error('Error checking liquidity:', error);
       return 50;
     }
   }
@@ -210,10 +285,29 @@ export class RiskService {
     provider: ethers.JsonRpcProvider
   ): Promise<number> {
     try {
-      // For demo: 50% chance ownership renounced
-      // In production: check owner() function and if it's zero address
-      return Math.random() > 0.5 ? 100 : 30;
-    } catch {
+      // Try to call owner() function
+      const contract = new ethers.Contract(
+        address,
+        ['function owner() view returns (address)'],
+        provider
+      );
+      
+      try {
+        const owner = await contract.owner();
+        
+        // Check if ownership is renounced (zero address)
+        if (owner === ethers.ZeroAddress) {
+          return 100; // Ownership renounced = safest
+        }
+        
+        // Has owner = some risk
+        return 30;
+      } catch {
+        // No owner() function = might be safe or might not have standard interface
+        return 60;
+      }
+    } catch (error) {
+      console.error('Error checking ownership:', error);
       return 50;
     }
   }
