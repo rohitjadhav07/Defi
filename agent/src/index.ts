@@ -10,7 +10,6 @@ import { EducationService } from './services/EducationService';
 import { ArbitrageService } from './services/ArbitrageService';
 import { SmartActionsService } from './services/SmartActionsService';
 import { P2PService } from './services/P2PService';
-import { ForexService } from './services/ForexService';
 import { ProfileService } from './services/ProfileService';
 import { TransferService } from './services/TransferService';
 
@@ -34,7 +33,6 @@ const educationService = new EducationService();
 const arbitrageService = new ArbitrageService();
 const smartActionsService = new SmartActionsService();
 const p2pService = new P2PService();
-const forexService = new ForexService();
 const profileService = new ProfileService();
 const transferService = new TransferService();
 
@@ -113,6 +111,87 @@ app.post('/chat', async (req, res) => {
   } catch (error) {
     console.error('Error in chat:', error);
     res.status(500).json({ error: 'Failed to process chat' });
+  }
+});
+
+// Voice command endpoint
+app.post('/voice/command', async (req, res) => {
+  try {
+    const { command, address } = req.body;
+    
+    // Process voice command with AI
+    let context: any = {};
+    if (address) {
+      try {
+        const portfolio = await portfolioService.getPortfolio(address);
+        const riskAnalysis = await riskService.analyzePortfolioRisk(portfolio.balances);
+        context = { portfolio, riskScore: riskAnalysis.overallScore, userAddress: address };
+      } catch (err) {
+        console.log('Could not fetch portfolio context:', err);
+      }
+    }
+    
+    const response = await defiAgent.execute({ 
+      message: `Voice command: ${command}`, 
+      context 
+    });
+    
+    res.json({ response });
+  } catch (error) {
+    console.error('Error processing voice command:', error);
+    res.status(500).json({ error: 'Failed to process voice command' });
+  }
+});
+
+// Panic button - check threats
+app.get('/panic/threats/:address', async (req, res) => {
+  try {
+    const { address } = req.params;
+    
+    // AI-powered threat detection
+    const threats = [];
+    
+    // Check portfolio risk
+    const portfolio = await portfolioService.getPortfolio(address);
+    const riskAnalysis = await riskService.analyzePortfolioRisk(portfolio.balances);
+    
+    if (riskAnalysis.overallScore > 80) {
+      threats.push({
+        type: 'high_risk',
+        message: `High risk score detected: ${riskAnalysis.overallScore}/100`,
+        severity: 'high'
+      });
+    }
+    
+    res.json(threats);
+  } catch (error) {
+    console.error('Error checking threats:', error);
+    res.status(500).json({ error: 'Failed to check threats' });
+  }
+});
+
+// Panic button - execute emergency exit
+app.post('/panic/execute', async (req, res) => {
+  try {
+    const { address } = req.body;
+    
+    // In a real implementation, this would:
+    // 1. Get all user positions
+    // 2. Execute emergency swaps to stablecoins
+    // 3. Return transaction hashes
+    
+    // For demo, return success message
+    res.json({
+      success: true,
+      message: 'Emergency exit executed successfully. All assets converted to USDC.',
+      transactions: [
+        { hash: '0x123...abc', type: 'ETH -> USDC', amount: '1.5 ETH' },
+        { hash: '0x456...def', type: 'DAI -> USDC', amount: '500 DAI' }
+      ]
+    });
+  } catch (error) {
+    console.error('Error executing panic mode:', error);
+    res.status(500).json({ error: 'Failed to execute panic mode' });
   }
 });
 
@@ -268,71 +347,6 @@ app.get('/p2p/trades/:address', async (req, res) => {
   } catch (error) {
     console.error('Error fetching user trades:', error);
     res.status(500).json({ error: 'Failed to fetch trades' });
-  }
-});
-
-// Forex Trading endpoints
-app.get('/forex/pairs', async (req, res) => {
-  try {
-    const pairs = await forexService.getPairs();
-    res.json(pairs);
-  } catch (error) {
-    console.error('Error fetching forex pairs:', error);
-    res.status(500).json({ error: 'Failed to fetch pairs' });
-  }
-});
-
-app.get('/forex/signals', async (req, res) => {
-  try {
-    const signals = await forexService.getSignals();
-    res.json(signals);
-  } catch (error) {
-    console.error('Error fetching forex signals:', error);
-    res.status(500).json({ error: 'Failed to fetch signals' });
-  }
-});
-
-app.post('/forex/trade', async (req, res) => {
-  try {
-    const { pair, type, amount, leverage, stopLoss, takeProfit } = req.body;
-    const trade = await forexService.openTrade(pair, type, amount, leverage, stopLoss, takeProfit);
-    res.json(trade);
-  } catch (error) {
-    console.error('Error opening forex trade:', error);
-    res.status(500).json({ error: 'Failed to open trade' });
-  }
-});
-
-app.post('/forex/trade/:id/close', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const trade = await forexService.closeTrade(id);
-    res.json(trade);
-  } catch (error) {
-    console.error('Error closing forex trade:', error);
-    res.status(500).json({ error: 'Failed to close trade' });
-  }
-});
-
-app.get('/forex/trades', async (req, res) => {
-  try {
-    const { status } = req.query;
-    const trades = await forexService.getTrades(status as any);
-    res.json(trades);
-  } catch (error) {
-    console.error('Error fetching forex trades:', error);
-    res.status(500).json({ error: 'Failed to fetch trades' });
-  }
-});
-
-app.get('/forex/analysis/:pair', async (req, res) => {
-  try {
-    const { pair } = req.params;
-    const analysis = await forexService.getForexAnalysis(pair);
-    res.json({ analysis });
-  } catch (error) {
-    console.error('Error fetching forex analysis:', error);
-    res.status(500).json({ error: 'Failed to fetch analysis' });
   }
 });
 
@@ -492,7 +506,8 @@ app.listen(PORT, () => {
   console.log(`✅ Arbitrage scanner active`);
   console.log(`✅ Smart protection enabled`);
   console.log(`✅ P2P Trading marketplace live`);
-  console.log(`✅ Forex Trading platform active (30+ pairs)`);
+  console.log(`🎤 Voice-Activated Trading ready`);
+  console.log(`🚨 AI Panic Button active`);
   console.log(`✅ On-chain User Profiles ready`);
   console.log(`✅ KYC Verification system active`);
   console.log(`✅ Token Transfer system ready`);

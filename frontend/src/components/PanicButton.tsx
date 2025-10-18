@@ -37,6 +37,11 @@ export default function PanicButton() {
       setShowConfirm(false);
       alert(`✅ Emergency Exit Complete!\n\n${data.message}\n\nAll assets converted to USDC.`);
     },
+    onError: (error) => {
+      setIsExecuting(false);
+      setShowConfirm(false);
+      alert(`❌ Error: ${error.message}\n\nPlease try again or contact support.`);
+    },
   });
 
   const handlePanicClick = () => {
