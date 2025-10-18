@@ -8,6 +8,7 @@ import { useMutation } from '@tanstack/react-query';
 export default function VoiceTrading() {
   const { address } = useAccount();
   const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
   const [recognition, setRecognition] = useState<any>(null);
@@ -49,13 +50,28 @@ export default function VoiceTrading() {
       setResponse(data.response);
       // Speak response
       if ('speechSynthesis' in window) {
+        // Stop any ongoing speech first
+        window.speechSynthesis.cancel();
+        
         const utterance = new SpeechSynthesisUtterance(data.response);
         utterance.rate = 0.9;
         utterance.pitch = 1;
+        
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+        
         window.speechSynthesis.speak(utterance);
       }
     },
   });
+
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+  };
 
   const processVoiceCommand = async (command: string) => {
     processCommandMutation.mutate(command);
@@ -90,25 +106,40 @@ export default function VoiceTrading() {
           <p className="text-gray-400 mb-6">Control your portfolio with your voice</p>
 
           {/* Microphone Button */}
-          <button
-            onClick={toggleListening}
-            disabled={!address}
-            className={`w-32 h-32 rounded-full mx-auto flex items-center justify-center transition-all ${
-              isListening
-                ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-                : 'bg-purple-600 hover:bg-purple-700'
-            } ${!address ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {isListening ? (
-              <MicOff className="w-16 h-16 text-white" />
-            ) : (
-              <Mic className="w-16 h-16 text-white" />
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={toggleListening}
+              disabled={!address}
+              className={`w-32 h-32 rounded-full flex items-center justify-center transition-all ${
+                isListening
+                  ? 'bg-red-500 hover:bg-red-600 animate-pulse'
+                  : 'bg-purple-600 hover:bg-purple-700'
+              } ${!address ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isListening ? (
+                <MicOff className="w-16 h-16 text-white" />
+              ) : (
+                <Mic className="w-16 h-16 text-white" />
+              )}
+            </button>
+
+            {/* Stop Speaking Button */}
+            {isSpeaking && (
+              <button
+                onClick={stopSpeaking}
+                className="w-32 h-32 rounded-full bg-orange-600 hover:bg-orange-700 flex flex-col items-center justify-center transition-all animate-pulse"
+              >
+                <Volume2 className="w-12 h-12 text-white mb-2" />
+                <span className="text-sm font-semibold">STOP</span>
+              </button>
             )}
-          </button>
+          </div>
 
           <p className="mt-4 text-sm text-gray-400">
             {!address
               ? 'Connect wallet to use voice commands'
+              : isSpeaking
+              ? '🔊 AI is speaking... Click STOP to interrupt'
               : isListening
               ? '🎤 Listening... Speak now'
               : 'Click microphone to start'}
