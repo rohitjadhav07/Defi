@@ -3,9 +3,11 @@ import axios from 'axios';
 export class PriceService {
   private priceCache: Map<string, { price: number; timestamp: number }>;
   private cacheDuration = 60000; // 1 minute cache
+  private forexCache: Map<string, { rate: number; timestamp: number }>;
 
   constructor() {
     this.priceCache = new Map();
+    this.forexCache = new Map();
   }
 
   async getETHPrice(): Promise<number> {
@@ -95,5 +97,84 @@ export class PriceService {
       // Default fallback
       return 0;
     }
+  }
+
+  /**
+   * Get real forex rates from ExchangeRate-API (FREE)
+   */
+  async getForexRate(from: string, to: string): Promise<number> {
+    const cacheKey = `${from}/${to}`;
+    const cached = this.forexCache.get(cacheKey);
+    const now = Date.now();
+
+    // Return cached rate if still valid
+    if (cached && now - cached.timestamp < this.cacheDuration) {
+      return cached.rate;
+    }
+
+    try {
+      // Use ExchangeRate-API (FREE, no key required)
+      const response = await axios.get(
+        `https://api.exchangerate-api.com/v4/latest/${from}`
+      );
+
+      const rate = response.data.rates[to];
+      if (rate) {
+        this.forexCache.set(cacheKey, { rate, timestamp: now });
+        console.log(`✅ Fetched ${from}/${to} rate: ${rate}`);
+        return rate;
+      }
+
+      // Fallback
+      return 1.0;
+    } catch (error) {
+      console.error(`Error fetching ${from}/${to} rate:`, error);
+      
+      // Return cached if available
+      if (cached) {
+        return cached.rate;
+      }
+
+      // Ultimate fallback
+      return 1.0;
+    }
+  }
+
+  /**
+   * Get multiple forex rates at once
+   */
+  async getForexRates(pairs: Array<{ from: string; to: string }>): Promise<Map<string, number>> {
+    const rates = new Map<string, number>();
+    
+    // Group by base currency to minimize API calls
+    const byBase = new Map<string, string[]>();
+    pairs.forEach(({ from, to }) => {
+      if (!byBase.has(from)) {
+        byBase.set(from, []);
+      }
+      byBase.get(from)!.push(to);
+    });
+
+    // Fetch rates for each base currency
+    for (const [from, targets] of byBase.entries()) {
+      try {
+        const response = await axios.get(
+          `https://api.exchangerate-api.com/v4/latest/${from}`
+        );
+
+        targets.forEach(to => {
+          const rate = response.data.rates[to];
+          if (rate) {
+            const key = `${from}/${to}`;
+            rates.set(key, rate);
+            this.forexCache.set(key, { rate, timestamp: Date.now() });
+          }
+        });
+      } catch (error) {
+        console.error(`Error fetching rates for ${from}:`, error);
+      }
+    }
+
+    return rates;
   }
 }

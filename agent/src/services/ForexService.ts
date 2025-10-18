@@ -46,6 +46,8 @@ export class ForexService {
   private trades: Map<string, ForexTrade>;
   private signals: ForexSignal[];
   private priceCache: Map<string, { price: number; timestamp: number }>;
+  private lastUpdate: number = 0;
+  private updateInterval = 60000; // Update every minute
 
   constructor() {
     this.pairs = new Map();
@@ -54,6 +56,87 @@ export class ForexService {
     this.priceCache = new Map();
     this.initializePairs();
     this.generateMockSignals();
+    
+    // Start real-time updates
+    this.startRealTimeUpdates();
+  }
+
+  private async startRealTimeUpdates() {
+    // Update prices every minute
+    setInterval(async () => {
+      await this.updateRealPrices();
+    }, this.updateInterval);
+    
+    // Initial update
+    await this.updateRealPrices();
+  }
+
+  private async updateRealPrices() {
+    try {
+      // Fetch real forex rates from ExchangeRate-API
+      const majorCurrencies = ['EUR', 'GBP', 'JPY', 'CHF', 'AUD', 'CAD', 'NZD'];
+      
+      for (const currency of majorCurrencies) {
+        try {
+          const response = await axios.get(
+            `https://api.exchangerate-api.com/v4/latest/USD`
+          );
+          
+          const rates = response.data.rates;
+          
+          // Update major pairs
+          if (currency !== 'USD') {
+            const pairSymbol = `USD/${currency}`;
+            const pair = this.pairs.get(pairSymbol);
+            if (pair && rates[currency]) {
+              const newPrice = rates[currency];
+              const oldPrice = pair.bid;
+              pair.bid = newPrice;
+              pair.ask = newPrice * 1.0002; // Small spread
+              pair.spread = pair.ask - pair.bid;
+              pair.change24h = ((newPrice - oldPrice) / oldPrice) * 100;
+              
+              console.log(`✅ Updated ${pairSymbol}: ${newPrice.toFixed(4)}`);
+            }
+          }
+          
+          // Update EUR pairs
+          if (rates.EUR) {
+            const eurUsdRate = 1 / rates.EUR;
+            const eurPair = this.pairs.get('EUR/USD');
+            if (eurPair) {
+              const oldPrice = eurPair.bid;
+              eurPair.bid = eurUsdRate;
+              eurPair.ask = eurUsdRate * 1.0002;
+              eurPair.spread = eurPair.ask - eurPair.bid;
+              eurPair.change24h = ((eurUsdRate - oldPrice) / oldPrice) * 100;
+            }
+          }
+          
+          // Update GBP pairs
+          if (rates.GBP) {
+            const gbpUsdRate = 1 / rates.GBP;
+            const gbpPair = this.pairs.get('GBP/USD');
+            if (gbpPair) {
+              const oldPrice = gbpPair.bid;
+              gbpPair.bid = gbpUsdRate;
+              gbpPair.ask = gbpUsdRate * 1.0002;
+              gbpPair.spread = gbpPair.ask - gbpPair.bid;
+              gbpPair.change24h = ((gbpUsdRate - oldPrice) / oldPrice) * 100;
+            }
+          }
+          
+        } catch (error) {
+          console.error(`Error updating ${currency} rates:`, error);
+        }
+      }
+      
+      this.lastUpdate = Date.now();
+      console.log('✅ Forex prices updated with real data');
+      
+    } catch (error) {
+      console.error('Error updating forex prices:', error);
+    }
   }
 
   private initializePairs() {
