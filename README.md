@@ -1,4 +1,4 @@
-# 🛡️ DeFi Guardian AI
+# ⚡ Nexus Finance
 
 > **AI-Powered DeFi Portfolio Management with Real Blockchain Transactions**
 
@@ -10,7 +10,7 @@ A comprehensive DeFi platform built with ADK-TS framework, combining AI-powered 
 
 ## 🎯 What Is This?
 
-DeFi Guardian AI is a **production-ready DeFi platform** that helps users:
+Nexus Finance is a **production-ready DeFi platform** that helps users:
 - 📊 Track portfolios across multiple chains (Sepolia, Base, Arbitrum)
 - 🤖 Get AI-powered risk analysis and recommendations
 - 💸 Transfer tokens on-chain (ETH, USDC, USDT, DAI, WBTC)
@@ -20,6 +20,8 @@ DeFi Guardian AI is a **production-ready DeFi platform** that helps users:
 - 🔍 Find arbitrage opportunities
 
 **Built for ADK-TS Hackathon 2025** - Track 3: Web3 Use Cases
+
+*Where AI meets DeFi at the nexus of innovation* ✨
 
 ---
 
@@ -85,8 +87,8 @@ DeFi Guardian AI is a **production-ready DeFi platform** that helps users:
 
 ### 1. Clone & Install
 ```bash
-git clone <your-repo-url>
-cd defi-guardian-ai
+git clone https://github.com/rohitjadhav07/Defi.git
+cd Defi
 npm install
 ```
 
@@ -149,7 +151,7 @@ Open http://localhost:3000
 
 ### ADK-TS Integration
 
-Our `DeFiGuardianAI` agent extends the ADK-TS Agent base class:
+Our `NexusFinanceAI` agent extends the ADK-TS Agent base class:
 
 ```typescript
 import { Agent } from '@iqai/adk';
@@ -157,7 +159,7 @@ import { Agent } from '@iqai/adk';
 export class DeFiAgent extends Agent {
   constructor() {
     super({
-      name: 'DeFiGuardianAI',
+      name: 'NexusFinanceAI',
       description: 'AI-powered DeFi portfolio management',
       version: '1.0.0',
     });
@@ -213,7 +215,7 @@ npm run deploy:sepolia
 ## 📊 Project Structure
 
 ```
-defi-guardian-ai/
+nexus-finance/
 ├── agent/                  # Backend (ADK-TS + Express)
 │   ├── src/
 │   │   ├── agents/        # ADK-TS agents

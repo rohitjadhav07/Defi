@@ -14,7 +14,7 @@ export class DeFiAgent extends Agent {
 
   constructor() {
     super({
-      name: 'DeFiGuardianAI',
+      name: 'NexusFinanceAI',
       description: 'AI-powered DeFi portfolio management and risk analysis agent',
     });
 
@@ -27,7 +27,7 @@ export class DeFiAgent extends Agent {
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.geminiModel = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-    console.log('✅ DeFiGuardianAI Agent initialized with ADK-TS');
+    console.log('✅ Nexus Finance AI Agent initialized with ADK-TS');
   }
 
   /**
@@ -46,7 +46,7 @@ export class DeFiAgent extends Agent {
       const { message, context } = input;
 
       // Build context-aware prompt
-      let systemPrompt = `You are DeFi Guardian AI (DeFiGuardianAI), an expert DeFi advisor powered by ADK-TS framework.
+      let systemPrompt = `You are Nexus Finance AI, an expert DeFi advisor powered by ADK-TS framework.
 
 Your capabilities:
 - Portfolio analysis and risk assessment
@@ -213,7 +213,7 @@ Keep it concise and beginner-friendly.`;
     conversationLength: number;
   } {
     return {
-      name: 'DeFiGuardianAI',
+      name: 'NexusFinanceAI',
       active: true,
       conversationLength: this.conversationHistory.length,
     };

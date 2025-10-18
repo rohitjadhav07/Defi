@@ -6,8 +6,8 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'DeFi Portfolio Agent',
-  description: 'Multichain DeFi portfolio manager powered by AI',
+  title: 'Nexus Finance - AI-Powered DeFi',
+  description: 'Where AI meets DeFi at the nexus of innovation',
 };
 
 export default function RootLayout({
