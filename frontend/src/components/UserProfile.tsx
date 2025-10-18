@@ -16,11 +16,18 @@ export default function UserProfile() {
     queryFn: async () => {
       if (!address) throw new Error('No address');
       const response = await fetch(`${process.env.NEXT_PUBLIC_AGENT_API_URL}/profile/${address}`);
-      if (!response.ok) throw new Error('Failed to fetch profile');
+      if (!response.ok) {
+        // Profile doesn't exist yet
+        if (response.status === 404) return null;
+        throw new Error('Failed to fetch profile');
+      }
       return response.json();
     },
     enabled: !!address,
   });
+
+  // Auto-show create form if no profile exists
+  const hasProfile = profile && profile.username;
 
   const createProfileMutation = useMutation({
     mutationFn: async (data: { username: string; email?: string }) => {
@@ -61,12 +68,12 @@ export default function UserProfile() {
     return <div className="bg-gray-800 rounded-lg p-6 animate-pulse h-96" />;
   }
 
-  if (!profile && !isEditing) {
+  if (!hasProfile && !isEditing) {
     return (
       <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 text-center">
         <User className="w-16 h-16 mx-auto mb-4 text-gray-500" />
         <h3 className="text-xl font-semibold mb-2">Create Your Profile</h3>
-        <p className="text-gray-400 mb-4">Get started with DeFi Guardian AI</p>
+        <p className="text-gray-400 mb-4">Get started with Nexus Finance</p>
         <button
           onClick={() => setIsEditing(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
@@ -77,10 +84,10 @@ export default function UserProfile() {
     );
   }
 
-  if (isEditing) {
+  if (isEditing || !hasProfile) {
     return (
       <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-        <h3 className="text-xl font-semibold mb-4">Create Your Profile</h3>
+        <h3 className="text-xl font-semibold mb-4">{hasProfile ? 'Edit Profile' : 'Create Your Profile'}</h3>
         <form
           onSubmit={(e) => {
             e.preventDefault();

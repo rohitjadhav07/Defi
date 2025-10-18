@@ -122,6 +122,12 @@ export default function P2PMarketplace() {
         </div>
       </div>
 
+      {!address && (
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+          <p className="text-sm text-blue-400">💡 Connect your wallet to start trading</p>
+        </div>
+      )}
+
       <div className="space-y-3">
         {offers.length === 0 ? (
           <p className="text-center text-gray-400 py-8">No offers available</p>

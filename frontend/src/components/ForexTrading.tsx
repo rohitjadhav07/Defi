@@ -6,13 +6,17 @@ import { useState } from 'react';
 
 export default function ForexTrading() {
   const [selectedPair, setSelectedPair] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const { data: pairs = [], isLoading: pairsLoading } = useQuery({
+  const { data: pairs = [], isLoading: pairsLoading, isFetching } = useQuery({
     queryKey: ['forex-pairs'],
     queryFn: async () => {
+      setIsUpdating(true);
       const response = await fetch(`${process.env.NEXT_PUBLIC_AGENT_API_URL}/forex/pairs`);
       if (!response.ok) throw new Error('Failed to fetch pairs');
-      return response.json();
+      const data = await response.json();
+      setTimeout(() => setIsUpdating(false), 500);
+      return data;
     },
     refetchInterval: 5000, // Update every 5 seconds
   });
@@ -45,16 +49,24 @@ export default function ForexTrading() {
     <div className="space-y-6">
       {/* Forex Pairs */}
       <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <DollarSign className="w-5 h-5 text-green-500" />
-          Forex Pairs
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-green-500" />
+            Forex Pairs
+          </h2>
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <div className={`w-2 h-2 rounded-full ${isUpdating ? 'bg-green-500 animate-pulse' : 'bg-gray-600'}`} />
+            {isUpdating ? 'Updating...' : 'Live'}
+          </div>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {pairs.map((pair: any) => (
             <div
               key={pair.symbol}
               onClick={() => setSelectedPair(pair.symbol)}
-              className="bg-gray-900 rounded-lg p-3 cursor-pointer hover:bg-gray-850 transition-colors"
+              className={`bg-gray-900 rounded-lg p-3 cursor-pointer hover:bg-gray-850 transition-all ${
+                isUpdating ? 'ring-1 ring-green-500/30' : ''
+              } ${selectedPair === pair.symbol ? 'ring-2 ring-blue-500' : ''}`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-sm">{pair.symbol}</span>

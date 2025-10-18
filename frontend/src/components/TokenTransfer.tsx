@@ -148,10 +148,15 @@ export default function TokenTransfer() {
     <div className="space-y-6">
       {/* Send Token Form */}
       <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Send className="w-5 h-5 text-blue-500" />
-          Send Tokens
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Send className="w-5 h-5 text-blue-500" />
+            Send Tokens
+          </h2>
+          <div className="text-xs text-gray-400 bg-gray-900 px-3 py-1 rounded-full">
+            On-Chain Transfer
+          </div>
+        </div>
 
         <div className="space-y-4">
           {/* Token Selection */}
