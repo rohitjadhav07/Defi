@@ -78,6 +78,19 @@ Nexus Finance is a **production-ready DeFi platform** that helps users:
 
 ---
 
+## 🌐 Real Data Sources
+
+Nexus Finance uses **100% real, live data**:
+
+- **CoinGecko API** - Real cryptocurrency prices (ETH, USDC, USDT, DAI, WBTC)
+- **ExchangeRate-API** - Real forex rates (30+ currency pairs)
+- **Direct Blockchain RPC** - Real wallet balances and transactions
+- **Updates every 60 seconds** - Live price feeds
+
+See [REAL_DATA_SOURCES.md](REAL_DATA_SOURCES.md) for details.
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
