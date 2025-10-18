@@ -5,14 +5,15 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useState } from 'react';
 import Dashboard from '@/components/Dashboard';
 import P2PMarketplace from '@/components/P2PMarketplace';
-import ForexTrading from '@/components/ForexTrading';
+import VoiceTrading from '@/components/VoiceTrading';
+import PanicButton from '@/components/PanicButton';
 import UserProfile from '@/components/UserProfile';
 import TokenTransfer from '@/components/TokenTransfer';
 import Header from '@/components/Header';
 
 export default function Home() {
   const { isConnected } = useAccount();
-  const [activeTab, setActiveTab] = useState<'portfolio' | 'p2p' | 'forex' | 'transfer' | 'profile'>('portfolio');
+  const [activeTab, setActiveTab] = useState<'portfolio' | 'p2p' | 'voice' | 'panic' | 'transfer' | 'profile'>('portfolio');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -25,14 +26,14 @@ export default function Home() {
                 DeFi Guardian AI
               </h1>
               <p className="text-xl text-gray-400 max-w-2xl">
-                Complete Financial Platform: DeFi + P2P + Forex Trading
+                Revolutionary DeFi Platform with Voice Control & AI Protection
               </p>
               <div className="flex flex-wrap gap-4 justify-center text-sm text-gray-500 mt-6">
-                <span className="px-3 py-1 bg-gray-800 rounded-full">🛡️ Risk Protection</span>
-                <span className="px-3 py-1 bg-gray-800 rounded-full">🎓 AI Education</span>
-                <span className="px-3 py-1 bg-gray-800 rounded-full">💰 Arbitrage</span>
+                <span className="px-3 py-1 bg-gray-800 rounded-full">🎤 Voice Trading</span>
+                <span className="px-3 py-1 bg-gray-800 rounded-full">🚨 AI Panic Button</span>
+                <span className="px-3 py-1 bg-gray-800 rounded-full">🎓 DeFi University</span>
                 <span className="px-3 py-1 bg-gray-800 rounded-full">👥 P2P Trading</span>
-                <span className="px-3 py-1 bg-gray-800 rounded-full">📈 Forex</span>
+                <span className="px-3 py-1 bg-gray-800 rounded-full">🛡️ Risk Protection</span>
               </div>
             </div>
             <ConnectButton />
@@ -62,14 +63,24 @@ export default function Home() {
                 👥 P2P Marketplace
               </button>
               <button
-                onClick={() => setActiveTab('forex')}
+                onClick={() => setActiveTab('voice')}
                 className={`px-6 py-3 font-semibold transition-colors whitespace-nowrap ${
-                  activeTab === 'forex'
+                  activeTab === 'voice'
                     ? 'text-green-400 border-b-2 border-green-400'
                     : 'text-gray-400 hover:text-gray-300'
                 }`}
               >
-                📈 Forex Trading
+                🎤 Voice Control
+              </button>
+              <button
+                onClick={() => setActiveTab('panic')}
+                className={`px-6 py-3 font-semibold transition-colors whitespace-nowrap ${
+                  activeTab === 'panic'
+                    ? 'text-red-400 border-b-2 border-red-400'
+                    : 'text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                🚨 AI Protection
               </button>
               <button
                 onClick={() => setActiveTab('transfer')}
@@ -96,7 +107,8 @@ export default function Home() {
             {/* Content */}
             {activeTab === 'portfolio' && <Dashboard />}
             {activeTab === 'p2p' && <P2PMarketplace />}
-            {activeTab === 'forex' && <ForexTrading />}
+            {activeTab === 'voice' && <VoiceTrading />}
+            {activeTab === 'panic' && <PanicButton />}
             {activeTab === 'transfer' && <TokenTransfer />}
             {activeTab === 'profile' && <UserProfile />}
           </>
