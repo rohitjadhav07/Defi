@@ -50,6 +50,7 @@ export default function P2PMarketplace() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<'all' | 'buy' | 'sell'>('all');
   const [selectedOffer, setSelectedOffer] = useState<any>(null);
+  const [showTradeModal, setShowTradeModal] = useState(false);
   
   const { data: hash, writeContract, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
@@ -65,19 +66,31 @@ export default function P2PMarketplace() {
     refetchInterval: 10000,
   });
 
-  const handleTrade = async (offer: any) => {
-    if (!address) return;
+  const handleTradeClick = (offer: any) => {
+    if (!address) {
+      alert('Please connect your wallet first');
+      return;
+    }
+    setSelectedOffer(offer);
+    setShowTradeModal(true);
+  };
+
+  const handleConfirmTrade = async () => {
+    if (!selectedOffer || !address) return;
     
     try {
-      // Accept trade on-chain via escrow contract
-      writeContract({
-        address: ESCROW_CONTRACT as `0x${string}`,
-        abi: ESCROW_ABI,
-        functionName: 'acceptTrade',
-        args: [BigInt(offer.onChainId || 0)],
-      });
+      // For now, just show a message since contract isn't deployed
+      alert(`Trade initiated for ${selectedOffer.amount} ${selectedOffer.token.symbol}\n\nNote: Smart contract deployment required for actual execution.`);
+      setShowTradeModal(false);
+      setSelectedOffer(null);
       
-      setSelectedOffer(offer);
+      // TODO: Uncomment when contract is deployed
+      // writeContract({
+      //   address: ESCROW_CONTRACT as `0x${string}`,
+      //   abi: ESCROW_ABI,
+      //   functionName: 'acceptTrade',
+      //   args: [BigInt(selectedOffer.onChainId || 0)],
+      // });
     } catch (error) {
       console.error('Trade failed:', error);
     }
@@ -190,17 +203,91 @@ export default function P2PMarketplace() {
               </div>
 
               <button 
-                onClick={() => handleTrade(offer)}
-                disabled={!address || isPending || isConfirming}
+                onClick={() => handleTradeClick(offer)}
+                disabled={!address}
                 className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 text-white py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <Shield className="w-4 h-4" />
-                {isPending ? 'Confirm in Wallet...' : isConfirming ? 'Processing...' : 'Trade with Escrow'}
+                {!address ? 'Connect Wallet to Trade' : 'View Trade Details'}
               </button>
             </div>
           ))
         )}
       </div>
+
+      {/* Trade Modal */}
+      {showTradeModal && selectedOffer && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">
+            <h3 className="text-xl font-semibold mb-4">Trade Details</h3>
+            
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Type:</span>
+                <span className="font-semibold">{selectedOffer.type.toUpperCase()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Token:</span>
+                <span className="font-semibold">{selectedOffer.token.symbol}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Amount:</span>
+                <span className="font-semibold">{selectedOffer.amount} {selectedOffer.token.symbol}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Price:</span>
+                <span className="font-semibold">${selectedOffer.price.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Total:</span>
+                <span className="font-semibold text-lg">${(selectedOffer.amount * selectedOffer.price).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Seller:</span>
+                <span className="text-sm">{selectedOffer.creator.substring(0, 10)}...</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Reputation:</span>
+                <span className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                  {selectedOffer.reputation}%
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-400">
+                <Shield className="w-4 h-4 inline mr-1" />
+                This trade will be secured by smart contract escrow
+              </p>
+            </div>
+
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+              <p className="text-xs text-yellow-400">
+                ⚠️ Note: Smart contract deployment required for actual execution. This is a demo of the trade flow.
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowTradeModal(false);
+                  setSelectedOffer(null);
+                }}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmTrade}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg"
+              >
+                Confirm Trade
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
