@@ -5,10 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
 export default function ForexTrading() {
-  const [selectedPair, setSelectedPair] = useState<string | null>(null);
+  const [selectedPair, setSelectedPair] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedSignal, setSelectedSignal] = useState<any>(null);
   const [showSignalModal, setShowSignalModal] = useState(false);
+  const [showChartModal, setShowChartModal] = useState(false);
 
   const { data: pairs = [], isLoading: pairsLoading, isFetching } = useQuery({
     queryKey: ['forex-pairs'],
@@ -65,10 +66,13 @@ export default function ForexTrading() {
           {pairs.map((pair: any) => (
             <div
               key={pair.symbol}
-              onClick={() => setSelectedPair(pair.symbol)}
-              className={`bg-gray-900 rounded-lg p-3 cursor-pointer hover:bg-gray-850 transition-all ${
+              onClick={() => {
+                setSelectedPair(pair);
+                setShowChartModal(true);
+              }}
+              className={`bg-gray-900 rounded-lg p-3 cursor-pointer hover:bg-gray-850 hover:ring-2 hover:ring-blue-500/50 transition-all ${
                 isUpdating ? 'ring-1 ring-green-500/30' : ''
-              } ${selectedPair === pair.symbol ? 'ring-2 ring-blue-500' : ''}`}
+              }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-sm">{pair.symbol}</span>
@@ -191,59 +195,144 @@ export default function ForexTrading() {
         </div>
       )}
 
-      {/* Selected Pair Chart */}
-      {selectedPair && (
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <h2 className="text-xl font-semibold mb-4">{selectedPair} Price Chart</h2>
-          <div className="bg-gray-900 rounded-lg p-4 h-64 flex items-center justify-center relative overflow-hidden">
-            {/* Simple ASCII-style chart */}
-            <div className="w-full h-full flex items-end gap-1">
-              {Array.from({ length: 50 }).map((_, i) => {
-                const height = 30 + Math.sin(i / 5) * 20 + Math.random() * 10;
-                const isUp = i > 0 && height > (30 + Math.sin((i-1) / 5) * 20);
-                return (
-                  <div
-                    key={i}
-                    className={`flex-1 rounded-t transition-all ${
-                      isUp ? 'bg-green-500/50' : 'bg-red-500/50'
-                    }`}
-                    style={{ height: `${height}%` }}
-                  />
-                );
-              })}
+      {/* Chart Modal */}
+      {showChartModal && selectedPair && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-gray-800 rounded-lg max-w-4xl w-full border border-gray-700 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">{selectedPair.symbol}</h2>
+                <div className="flex items-center gap-4 mt-2">
+                  <span className="text-3xl font-bold">{selectedPair.bid.toFixed(4)}</span>
+                  <span className={`text-lg font-semibold ${
+                    selectedPair.change24h >= 0 ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {selectedPair.change24h >= 0 ? '+' : ''}{selectedPair.change24h.toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowChartModal(false);
+                  setSelectedPair(null);
+                }}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
             </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-gray-600 text-sm">Live Price Movement</p>
-            </div>
-          </div>
-          <div className="mt-4 grid grid-cols-4 gap-4 text-sm">
-            <div className="bg-gray-900 rounded p-3">
-              <p className="text-gray-400 text-xs">24h High</p>
-              <p className="font-semibold text-green-400">
-                {pairs.find((p: any) => p.symbol === selectedPair)?.high24h.toFixed(4) || '-'}
-              </p>
-            </div>
-            <div className="bg-gray-900 rounded p-3">
-              <p className="text-gray-400 text-xs">24h Low</p>
-              <p className="font-semibold text-red-400">
-                {pairs.find((p: any) => p.symbol === selectedPair)?.low24h.toFixed(4) || '-'}
-              </p>
-            </div>
-            <div className="bg-gray-900 rounded p-3">
-              <p className="text-gray-400 text-xs">24h Change</p>
-              <p className={`font-semibold ${
-                (pairs.find((p: any) => p.symbol === selectedPair)?.change24h || 0) >= 0 
-                  ? 'text-green-400' 
-                  : 'text-red-400'
-              }`}>
-                {(pairs.find((p: any) => p.symbol === selectedPair)?.change24h || 0).toFixed(2)}%
-              </p>
-            </div>
-            <div className="bg-gray-900 rounded p-3">
-              <p className="text-gray-400 text-xs">Spread</p>
-              <p className="font-semibold">
-                {(pairs.find((p: any) => p.symbol === selectedPair)?.spread || 0).toFixed(4)}
-              </p>
+
+            {/* Chart */}
+            <div className="p-6">
+              <div className="bg-gray-900 rounded-lg p-4 h-96 relative">
+                {/* Candlestick-style chart */}
+                <div className="w-full h-full flex items-end justify-between gap-1 px-4">
+                  {Array.from({ length: 60 }).map((_, i) => {
+                    const basePrice = selectedPair.bid;
+                    const volatility = basePrice * 0.002;
+                    const open = basePrice + (Math.random() - 0.5) * volatility;
+                    const close = basePrice + (Math.random() - 0.5) * volatility;
+                    const high = Math.max(open, close) + Math.random() * volatility * 0.5;
+                    const low = Math.min(open, close) - Math.random() * volatility * 0.5;
+                    const isGreen = close > open;
+                    const bodyHeight = Math.abs(close - open) / volatility * 100;
+                    const wickTop = (high - Math.max(open, close)) / volatility * 100;
+                    const wickBottom = (Math.min(open, close) - low) / volatility * 100;
+                    
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                        {/* Top wick */}
+                        <div 
+                          className={`w-0.5 ${isGreen ? 'bg-green-500' : 'bg-red-500'}`}
+                          style={{ height: `${wickTop}px` }}
+                        />
+                        {/* Body */}
+                        <div 
+                          className={`w-full ${isGreen ? 'bg-green-500' : 'bg-red-500'} rounded-sm`}
+                          style={{ height: `${Math.max(bodyHeight, 2)}px` }}
+                        />
+                        {/* Bottom wick */}
+                        <div 
+                          className={`w-0.5 ${isGreen ? 'bg-green-500' : 'bg-red-500'}`}
+                          style={{ height: `${wickBottom}px` }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Grid lines */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {[0, 25, 50, 75, 100].map((percent) => (
+                    <div
+                      key={percent}
+                      className="absolute w-full border-t border-gray-800"
+                      style={{ top: `${percent}%` }}
+                    />
+                  ))}
+                </div>
+
+                {/* Time labels */}
+                <div className="absolute bottom-0 left-0 right-0 flex justify-between px-4 text-xs text-gray-500 mt-2">
+                  <span>1h ago</span>
+                  <span>30m ago</span>
+                  <span>Now</span>
+                </div>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <div className="bg-gray-900 rounded-lg p-4">
+                  <p className="text-gray-400 text-sm mb-1">Bid Price</p>
+                  <p className="text-xl font-bold text-green-400">{selectedPair.bid.toFixed(4)}</p>
+                </div>
+                <div className="bg-gray-900 rounded-lg p-4">
+                  <p className="text-gray-400 text-sm mb-1">Ask Price</p>
+                  <p className="text-xl font-bold text-red-400">{selectedPair.ask.toFixed(4)}</p>
+                </div>
+                <div className="bg-gray-900 rounded-lg p-4">
+                  <p className="text-gray-400 text-sm mb-1">24h High</p>
+                  <p className="text-xl font-bold text-green-400">{selectedPair.high24h.toFixed(4)}</p>
+                </div>
+                <div className="bg-gray-900 rounded-lg p-4">
+                  <p className="text-gray-400 text-sm mb-1">24h Low</p>
+                  <p className="text-xl font-bold text-red-400">{selectedPair.low24h.toFixed(4)}</p>
+                </div>
+                <div className="bg-gray-900 rounded-lg p-4">
+                  <p className="text-gray-400 text-sm mb-1">Spread</p>
+                  <p className="text-xl font-bold">{selectedPair.spread.toFixed(4)}</p>
+                </div>
+                <div className="bg-gray-900 rounded-lg p-4">
+                  <p className="text-gray-400 text-sm mb-1">24h Volume</p>
+                  <p className="text-xl font-bold">${(selectedPair.volume24h / 1000000).toFixed(2)}M</p>
+                </div>
+                <div className="bg-gray-900 rounded-lg p-4">
+                  <p className="text-gray-400 text-sm mb-1">24h Change</p>
+                  <p className={`text-xl font-bold ${
+                    selectedPair.change24h >= 0 ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {selectedPair.change24h >= 0 ? '+' : ''}{selectedPair.change24h.toFixed(2)}%
+                  </p>
+                </div>
+                <div className="bg-gray-900 rounded-lg p-4">
+                  <p className="text-gray-400 text-sm mb-1">Status</p>
+                  <p className="text-xl font-bold text-green-400 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    Live
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <button className="bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition-colors">
+                  Buy {selectedPair.symbol.split('/')[0]}
+                </button>
+                <button className="bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition-colors">
+                  Sell {selectedPair.symbol.split('/')[0]}
+                </button>
+              </div>
             </div>
           </div>
         </div>
