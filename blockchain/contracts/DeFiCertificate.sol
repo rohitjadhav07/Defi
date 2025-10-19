@@ -3,15 +3,13 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 
 /**
  * @title DeFiCertificate
  * @dev NFT Certificate for DeFi University completions
  */
 contract DeFiCertificate is ERC721URIStorage, Ownable {
-    using Counters for Counters.Counter;
-    Counters.Counter private _tokenIds;
+    uint256 private _tokenIdCounter;
 
     // Mapping from address to earned certificates
     mapping(address => uint256[]) public userCertificates;
@@ -50,8 +48,8 @@ contract DeFiCertificate is ERC721URIStorage, Ownable {
         uint256 score,
         string memory tokenURI
     ) public onlyOwner returns (uint256) {
-        _tokenIds.increment();
-        uint256 newTokenId = _tokenIds.current();
+        _tokenIdCounter++;
+        uint256 newTokenId = _tokenIdCounter;
 
         _safeMint(recipient, newTokenId);
         _setTokenURI(newTokenId, tokenURI);
@@ -89,7 +87,7 @@ contract DeFiCertificate is ERC721URIStorage, Ownable {
      * @dev Get total number of certificates minted
      */
     function totalSupply() public view returns (uint256) {
-        return _tokenIds.current();
+        return _tokenIdCounter;
     }
 
     /**
