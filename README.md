@@ -482,9 +482,9 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 📞 Contact
 
-- **GitHub**: [Your GitHub]
+- **GitHub**: [https://github.com/rohitjadhav07/Defi]
 - **Demo Video**: [Your Video Link]
-- **Live Demo**: [Your Deployment Link]
+- **Live Demo**: [https://defi-frontend-ashy.vercel.app]
 
 ---
 
